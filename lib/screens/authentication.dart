@@ -6,6 +6,8 @@ import 'package:local_auth/local_auth.dart';
 class AuthenticationPage extends StatefulWidget {
   const AuthenticationPage({Key? key}) : super(key: key);
 
+  static String routeName = '/autenticathion';
+
   @override
   _AuthenticationPageState createState() => _AuthenticationPageState();
 }

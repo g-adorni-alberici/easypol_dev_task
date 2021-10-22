@@ -8,7 +8,7 @@ import 'drink_detail.dart';
 import 'qr_scan.dart';
 
 class HomePage extends StatelessWidget {
-  static String routeName = '/';
+  static String routeName = '/home';
 
   const HomePage({Key? key}) : super(key: key);
 
@@ -157,10 +157,32 @@ class DrinkTile extends StatelessWidget {
     final favorite = model.favorites.contains(drink.id);
 
     return ListTile(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => DrinkDetail(drink.id)),
-      ),
+      onTap: () {
+        showModalBottomSheet<void>(
+            context: context,
+            builder: (BuildContext context) {
+              return Container(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      const Text('Modal BottomSheet'),
+                      ElevatedButton(
+                        child: const Text('Close BottomSheet'),
+                        onPressed: () => Navigator.pop(context),
+                      )
+                    ],
+                  ),
+                ),
+              );
+            });
+      },
+
+      //  Navigator.push(
+      //   context,
+      //   MaterialPageRoute(builder: (_) => DrinkDetail(drink.id)),
+      // ),
       isThreeLine: true,
       leading: CircleAvatar(
         backgroundImage: NetworkImage(drink.preview),
