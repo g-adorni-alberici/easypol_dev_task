@@ -1,5 +1,6 @@
 import 'package:dev_task_adorni/screens/authentication.dart';
 import 'package:dev_task_adorni/screens/home.dart';
+import 'package:dev_task_adorni/screens/qr_scan.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -22,11 +23,12 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
-        initialRoute: HomePage.routeName,
+        initialRoute: AuthenticationPage.routeName,
         routes: {
           AuthenticationPage.routeName: (context) => const AuthenticationPage(),
           NewPinForm.routeName: (context) => const NewPinForm(),
           HomePage.routeName: (context) => const HomePage(),
+          QrScan.routeName: (context) => const QrScan(),
         },
       ),
     );

@@ -1,5 +1,7 @@
+import 'package:dev_task_adorni/widgets/error_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
 import '../models/drink.dart';
@@ -7,14 +9,58 @@ import '../models/drinks_model.dart';
 import 'drink_detail.dart';
 import 'qr_scan.dart';
 
+const kTablet = 800;
+
 class HomePage extends StatelessWidget {
   static String routeName = '/home';
 
   const HomePage({Key? key}) : super(key: key);
 
+  ///Controlla i permessi per la fotocamera e va alla scansione del QR
+  Future _scanQr(BuildContext context) async {
+    var status = await Permission.camera.status;
+
+    //Apr le impostazioni
+    if (status.isPermanentlyDenied) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Camera permissions permanently denied")),
+      );
+      return;
+    }
+
+    if (status.isDenied) {
+      //Rcihiesta permesso
+      final result = await Permission.camera.request().isGranted;
+
+      if (!result) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Camera permissions denied")),
+        );
+
+        return;
+      }
+    }
+
+    Navigator.pushNamed(context, QrScan.routeName);
+  }
+
   @override
   Widget build(BuildContext context) {
     final model = context.watch<DrinksModel>();
+
+    //Pagina di errore
+    if (model.error != null) {
+      return Scaffold(
+          body: ErrorScreen(
+        error: model.error!,
+        onRetry: () => model.getDrinks(),
+      ));
+    }
+
+    //Caricamento
+    if (model.loading) {
+      model.getDrinks();
+    }
 
     return DefaultTabController(
       length: 2,
@@ -31,64 +77,77 @@ class HomePage extends StatelessWidget {
                       ),
               icon: const Icon(Icons.search),
             ),
-            PopupMenuButton(
-                enabled: !model.loading,
-                onSelected: (result) => model.filterByCategory('$result'),
-                itemBuilder: (BuildContext context) => <PopupMenuEntry>[
-                      CheckedPopupMenuItem(
-                        value: kNoFilterString,
-                        checked: model.categoryFilterBy == kNoFilterString,
-                        child: const Text(kNoFilterString),
-                      ),
-                      const PopupMenuDivider(),
-                      CheckedPopupMenuItem(
-                        value: kAlcoholicString,
-                        checked: model.categoryFilterBy == kAlcoholicString,
-                        child: const Text(kAlcoholicString),
-                      ),
-                      CheckedPopupMenuItem(
-                        value: kNonAlcoholicString,
-                        checked: model.categoryFilterBy == kNonAlcoholicString,
-                        child: const Text(kNonAlcoholicString),
-                      ),
-                      const PopupMenuDivider(),
-                      for (String c in model.categories)
+            //Uso un builder per ricavare il context con già il DefaultTabController
+            Builder(builder: (context) {
+              return PopupMenuButton(
+                  icon: const Icon(Icons.filter_alt),
+                  enabled: !model.loading,
+                  onSelected: (result) {
+                    model.filterByCategory('$result');
+                    DefaultTabController.of(context)!.animateTo(0);
+                  },
+                  itemBuilder: (BuildContext context) => <PopupMenuEntry>[
                         CheckedPopupMenuItem(
-                          checked: c == model.categoryFilterBy,
-                          value: c,
-                          child: Text(c),
-                        )
-                    ]),
+                          value: kNoFilterString,
+                          checked: model.categoryFilterBy == kNoFilterString,
+                          child: const Text(kNoFilterString),
+                        ),
+                        const PopupMenuDivider(),
+                        CheckedPopupMenuItem(
+                          value: kAlcoholicString,
+                          checked: model.categoryFilterBy == kAlcoholicString,
+                          child: const Text(kAlcoholicString),
+                        ),
+                        CheckedPopupMenuItem(
+                          value: kNonAlcoholicString,
+                          checked:
+                              model.categoryFilterBy == kNonAlcoholicString,
+                          child: const Text(kNonAlcoholicString),
+                        ),
+                        const PopupMenuDivider(),
+                        for (String c in model.categories)
+                          CheckedPopupMenuItem(
+                            checked: c == model.categoryFilterBy,
+                            value: c,
+                            child: Text(c),
+                          )
+                      ]);
+            }),
           ],
           bottom: const TabBar(
             tabs: [
               Tab(icon: Text('COCKTAILS')),
               Tab(icon: Text('FAVORITES')),
+              //Tab(icon: Text('INGREDIENTS')),
             ],
           ),
         ),
-        body: Builder(builder: (context) {
-          if (model.loading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+        body: model.loading
+            ? const Center(child: CircularProgressIndicator())
+            : TabBarView(children: [
+                Builder(builder: (context) {
+                  final model = context.watch<DrinksModel>();
 
-          return TabBarView(children: [
-            DrinksListView(drinks: model.drinks),
-            DrinksListView(drinks: model.getFavorites()),
-            // FutureBuilder<List<String>>(
-            //   future: RestApi.listIngredients(),
-            //   builder: (context, snapshot) {
-            //     if (snapshot.hasData) {
-            //       return IngredientsListView(ingredients: snapshot.data!);
-            //     }
-            //     return const Center(child: CircularProgressIndicator());
-            //   },
-            // ),
-          ]);
-        }),
+                  return Column(
+                    children: [
+                      if (model.categoryFilterBy != kNoFilterString)
+                        ListTile(
+                          title: Text("Category: ${model.categoryFilterBy}"),
+                          trailing: IconButton(
+                            onPressed: () =>
+                                model.filterByCategory(kNoFilterString),
+                            icon: const Icon(Icons.clear),
+                          ),
+                          tileColor: Colors.grey[200],
+                        ),
+                      Expanded(child: DrinksListView(drinks: model.drinks)),
+                    ],
+                  );
+                }),
+                DrinksListView(drinks: model.getFavorites()),
+              ]),
         floatingActionButton: FloatingActionButton(
-          onPressed: () => Navigator.push(
-              context, MaterialPageRoute(builder: (context) => const QrScan())),
+          onPressed: () => _scanQr(context),
           child: const Icon(Icons.qr_code_scanner),
         ),
       ),
@@ -108,38 +167,21 @@ class DrinksListView extends StatelessWidget {
       return const Center(child: Text("No result found"));
     }
 
-    return ListView.separated(
-      itemCount: drinks.length,
-      itemBuilder: (context, index) => DrinkTile(drink: drinks[index]),
-      separatorBuilder: (context, index) => const Divider(height: 0),
-      padding: const EdgeInsets.only(bottom: 56),
-    );
-  }
-}
+    final width = MediaQuery.of(context).size.width;
 
-//Lista ingredienti
-class IngredientsListView extends StatelessWidget {
-  const IngredientsListView({Key? key, required this.ingredients})
-      : super(key: key);
-
-  final List<String> ingredients;
-
-  @override
-  Widget build(BuildContext context) {
-    if (ingredients.isEmpty) {
-      return const Center(child: Text("No result found"));
-    }
-
-    return ListView.separated(
-      itemCount: ingredients.length,
-      itemBuilder: (context, index) => ListTile(
-          onTap: () {
-            context.read<DrinksModel>().filterByIngredient(ingredients[index]);
-            DefaultTabController.of(context)!.animateTo(0);
-          },
-          title: Text(ingredients[index])),
-      separatorBuilder: (context, index) => const Divider(height: 0),
-      padding: const EdgeInsets.only(bottom: 56),
+    return Row(
+      children: [
+        Expanded(
+          child: ListView.separated(
+            itemCount: drinks.length,
+            itemBuilder: (context, index) => DrinkTile(drink: drinks[index]),
+            separatorBuilder: (context, index) => const Divider(height: 0),
+            padding: const EdgeInsets.only(bottom: 56),
+          ),
+        ),
+        if (width > kTablet) const VerticalDivider(),
+        if (width > kTablet) const Expanded(child: DrinkDetail())
+      ],
     );
   }
 }
@@ -156,33 +198,21 @@ class DrinkTile extends StatelessWidget {
 
     final favorite = model.favorites.contains(drink.id);
 
+    final width = MediaQuery.of(context).size.width;
+
     return ListTile(
       onTap: () {
-        showModalBottomSheet<void>(
-            context: context,
-            builder: (BuildContext context) {
-              return Container(
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      const Text('Modal BottomSheet'),
-                      ElevatedButton(
-                        child: const Text('Close BottomSheet'),
-                        onPressed: () => Navigator.pop(context),
-                      )
-                    ],
-                  ),
-                ),
-              );
-            });
-      },
+        model.selectedDrink = drink.id;
 
-      //  Navigator.push(
-      //   context,
-      //   MaterialPageRoute(builder: (_) => DrinkDetail(drink.id)),
-      // ),
+        if (width >= kTablet) {
+          model.showDetails();
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const DrinkDetail()),
+          );
+        }
+      },
       isThreeLine: true,
       leading: CircleAvatar(
         backgroundImage: NetworkImage(drink.preview),
@@ -193,7 +223,7 @@ class DrinkTile extends StatelessWidget {
       ),
       trailing: IconButton(
         icon: favorite
-            ? const Icon(Icons.favorite)
+            ? const Icon(Icons.favorite, color: Colors.red)
             : const Icon(Icons.favorite_border),
         onPressed: () {
           !model.favorites.contains(drink.id)

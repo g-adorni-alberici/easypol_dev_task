@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/rest_api.dart';
 import 'drink.dart';
@@ -12,7 +16,7 @@ const kNonAlcoholicString = 'Non Alcoholic';
 //e inoltre hanno un limite di 25.
 class DrinksModel extends ChangeNotifier {
   DrinksModel() {
-    getDrinks();
+    //getDrinks();
   }
   //Lista cocktails
   final List<Drink> _drinks = [];
@@ -20,7 +24,7 @@ class DrinksModel extends ChangeNotifier {
   List<Drink> _filteredDrinks = [];
 
   //IDs cocktail preferiti
-  final List<int> _favorites = [];
+  List<int> _favorites = [];
 
   //Lista categorie
   List<String> _categories = [];
@@ -40,6 +44,9 @@ class DrinksModel extends ChangeNotifier {
   List<int> get favorites => _favorites;
   List<String> get categories => _categories;
 
+  ///Cocktail selezionato
+  int? selectedDrink;
+
   String get categoryFilterBy => _categoryFilterBy;
   String get ingredientFilterBy => _ingredientFilterBy;
 
@@ -50,6 +57,7 @@ class DrinksModel extends ChangeNotifier {
   ///Per avere un elenco pià realistico carico i primi 25 per ogni lettera dell'alfabeto
   Future getDrinks() async {
     try {
+      _error = null;
       //Preparo i futures che saranno caricati contemporaneamente
       var futures = <Future>[];
       for (int i = 'A'.codeUnitAt(0); i <= 'Z'.codeUnitAt(0); i++) {
@@ -72,19 +80,65 @@ class DrinksModel extends ChangeNotifier {
       //Categorie
       _categories = responses.last as List<String>;
 
-      //Fine caricamento
-      _loading = false;
+      //Carico gli id dei preferiti precedentemente salvati
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      if (prefs.containsKey('favorites')) {
+        _favorites = jsonDecode(prefs.getString('favorites')!).cast<int>();
+      }
+    } on SocketException catch (_) {
+      //Errore connessione
+      _error = 'Server error. Please check your network connection ';
     } catch (e) {
-      //Può verificarsi un'eccezione in caso di connessione mancante o un errore del web service
-      _error = 'Server error. Check connection';
+      //Errore generico
+      _error = "An unexpected error has occurred. Please try again later.";
     } finally {
+      _loading = false;
       notifyListeners();
     }
   }
 
-  //Filtra per categoria
+  //Simulazione caricamento dati
+  Future getMockDrinks(bool throwException) async {
+    try {
+      if (throwException) {
+        throw "test exception";
+      }
+
+      for (int i = 0; i < 10; i++) {
+        _drinks.add(Drink(
+            id: i,
+            name: 'DRINK $i',
+            thumb: "",
+            category: "CAT ${i.isEven ? 'CAT 1' : 'CAT 2'}",
+            alcoholic: i.isEven,
+            ingredients: []));
+      }
+
+      _filteredDrinks = List.from(_drinks);
+
+      //Categorie
+      _categories = ["CAT1", "CAT2"];
+
+      //Carico gli id dei preferiti precedentemente salvati
+      final prefs = await SharedPreferences.getInstance();
+
+      if (prefs.containsKey('favorites')) {
+        _favorites = jsonDecode(prefs.getString('favorites')!).cast<int>();
+      }
+    } catch (e) {
+      //Può verificarsi un'eccezione in caso di connessione mancante o un errore del web service
+      _error = '$e';
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
+  }
+
+  //Filtra per categoria o per alcolico / non alcolico
   void filterByCategory(String category) {
     _categoryFilterBy = category;
+    _ingredientFilterBy = "";
 
     if (category == kNoFilterString) {
       //Ripristino la lista completa
@@ -145,14 +199,28 @@ class DrinksModel extends ChangeNotifier {
   }
 
   //Aggiunge l'id del cocktail ai preferiti
-  void addFavorite(int drinkId) {
+  Future addFavorite(int drinkId) async {
     _favorites.add(drinkId);
+    await _writeFavorites();
     notifyListeners();
   }
 
-  //Rimuove l'id del cocktail dai preferiti
-  void removeFavorite(int _drinkId) {
-    _favorites.remove(_drinkId);
+  ///Rimuove l'id del cocktail dai preferiti
+  Future removeFavorite(int drinkId) async {
+    _favorites.remove(drinkId);
+    _writeFavorites();
+    notifyListeners();
+  }
+
+  ///Salva i preferiti in modo da essere recuperati successivamente
+  Future _writeFavorites() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setString('favorites', jsonEncode(_favorites));
+  }
+
+  /// Dettagli per tablet
+  void showDetails() {
     notifyListeners();
   }
 }

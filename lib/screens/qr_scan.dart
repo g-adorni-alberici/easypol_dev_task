@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:dev_task_adorni/models/drinks_model.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 import 'drink_detail.dart';
@@ -9,6 +11,8 @@ const kCheckQrCode = 'EASYPOL_COCKTAIL:';
 
 class QrScan extends StatefulWidget {
   const QrScan({Key? key}) : super(key: key);
+
+  static String routeName = '/qr_scan';
 
   @override
   State<StatefulWidget> createState() => _QrScanState();
@@ -49,9 +53,11 @@ class _QrScanState extends State<QrScan> {
         if (scanData.code.contains(kCheckQrCode)) {
           final id = int.tryParse(scanData.code.replaceAll(kCheckQrCode, ''));
 
+          context.read<DrinksModel>().selectedDrink = id;
+
           if (id != null) {
-            Navigator.pushReplacement(
-                context, MaterialPageRoute(builder: (_) => DrinkDetail(id)));
+            Navigator.pushReplacement(context,
+                MaterialPageRoute(builder: (_) => const DrinkDetail()));
 
             return;
           }
@@ -68,16 +74,13 @@ class _QrScanState extends State<QrScan> {
       Navigator.pop(context);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$e'), duration: const Duration(seconds: 3)),
+        SnackBar(content: Text('$e')),
       );
     } catch (e) {
       Navigator.pop(context);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('An error occured. Is not possible use the scan'),
-          duration: Duration(seconds: 3),
-        ),
+        const SnackBar(content: Text('An error occured. Try again')),
       );
     }
   }
@@ -88,10 +91,7 @@ class _QrScanState extends State<QrScan> {
     if (!permission) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No Camera Permission'),
-          duration: Duration(seconds: 3),
-        ),
+        const SnackBar(content: Text('Camera permission denied')),
       );
     }
   }
