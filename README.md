@@ -14,37 +14,43 @@ Essendo uno spin-off del team tecnico, gli altri team non vengono coinvolti. Per
 
 Infine non volete assolutamente che gli altri team vengano a sapere del vostro progetto, perciò dovrai far si che sia possibile impostare un pin di sicurezza e accesso biometrico per accedere all’app.
 
-# Funzionalità
+## Funzionalità
 - Lista cocktail
--- Ricerca per nome
--- Ricerca per ingrediente
--- Filtra per alcolico e non-alcolico
--- Filtra per categoria
+    - Ricerca per nome
+    - Ricerca per ingrediente
+    - Filtra per alcolico e non-alcolico
+    - Filtra per categoria
 - Dettaglio cocktail
 - Poter segnare/rimuovere un cocktail come preferito
 - Lista cocktail preferiti
 - Condivisione cocktail tramite QRCode
-BONUS: Unit e Integration Testing
-Dettagli delle API da cui prendere i dati:
-Integra queste API all’interno dell’applicazione per ottenere i dati richiesti. Utilizza tutti gli endpoint che preferisci (chiaramente solo quelli free).
-Requisiti di progetto:
-Cross-Platform: iOS e Android
-Responsive (smartphone, tablet)
-PIN e Accesso Biometrico
-Vincoli Tecnici:
-Pattern State Management: Provider
-Valutazione e consegna
-Modalità di valutazione:
-Valuteremo i seguenti aspetti:
-Corretto funzionamento delle funzionalità richieste
-Qualità del codice in termini di ordine, efficienza e sicurezza
-UI/UX dell’applicazione
-Scelte progettuali
-Velocità di consegna
-Prestazioni dell'app
+- BONUS: Unit e Integration Testing
 
-Modalità di consegna (passaggi obbligatori):
-Condivisione di un repository Git
-Rilascio su Apple TestFlight e/o Test interno Google Play Store
-Presentazione dell’assignment tramite Google Meet
+Dettagli delle API da cui prendere i dati:
+
+Integra queste API all’interno dell’applicazione per ottenere i dati richiesti. Utilizza tutti gli endpoint che preferisci (chiaramente solo quelli free).
+
+## Requisiti di progetto:
+- Cross-Platform: iOS e Android
+- Responsive (smartphone, tablet)
+- PIN e Accesso Biometrico
+
+## Vincoli Tecnici:
+- Pattern State Management: Provider
+
+# Valutazione e consegna
+
+## Modalità di valutazione:
+Valuteremo i seguenti aspetti:
+- Corretto funzionamento delle funzionalità richieste
+- Qualità del codice in termini di ordine, efficienza e sicurezza
+- UI/UX dell’applicazione
+- Scelte progettuali
+- Velocità di consegna
+- Prestazioni dell'app
+
+## Modalità di consegna (passaggi obbligatori):
+- Condivisione di un repository Git
+- Rilascio su Apple TestFlight e/o Test interno Google Play Store
+- Presentazione dell’assignment tramite Google Meet
 

@@ -7,6 +7,8 @@ class Drink {
     required this.alcoholic,
     required this.ingredients,
     this.instructions,
+    this.iba,
+    this.glass,
   });
 
   final int id;
@@ -16,8 +18,10 @@ class Drink {
   final bool alcoholic;
   final String? instructions;
   final List<Ingredient> ingredients;
+  final String? iba;
+  final String? glass;
 
-  //Immagine più piccola
+  ///Immagine più piccola
   String get preview => thumb + '/preview';
 
   factory Drink.fromJson(Map<String, dynamic> json) {
@@ -25,7 +29,9 @@ class Drink {
     final List<Ingredient> ingredients = [];
 
     for (int i = 1; i <= 15; i++) {
-      if (json['strIngredient$i'] != null) {
+      final ingredient = json['strIngredient$i'] as String?;
+
+      if (ingredient != null && ingredient.isNotEmpty) {
         ingredients.add(Ingredient(
           name: json['strIngredient$i'],
           measure: json['strMeasure$i'],
@@ -41,6 +47,8 @@ class Drink {
       thumb: json['strDrinkThumb'],
       ingredients: ingredients,
       instructions: json['strInstructions'],
+      iba: json['strIBA'],
+      glass: json['strGlass'],
     );
   }
 }

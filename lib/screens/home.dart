@@ -1,4 +1,3 @@
-import 'package:dev_task_adorni/widgets/error_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -6,10 +5,11 @@ import 'package:provider/provider.dart';
 
 import '../models/drink.dart';
 import '../models/drinks_model.dart';
+import '../widgets/error_screen.dart';
 import 'drink_detail.dart';
 import 'qr_scan.dart';
 
-const kTablet = 800;
+const kTabletBreakpoint = 800;
 
 class HomePage extends StatelessWidget {
   static String routeName = '/home';
@@ -29,7 +29,7 @@ class HomePage extends StatelessWidget {
     }
 
     if (status.isDenied) {
-      //Rcihiesta permesso
+      //Richiesta permesso
       final result = await Permission.camera.request().isGranted;
 
       if (!result) {
@@ -65,6 +65,7 @@ class HomePage extends StatelessWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
+        backgroundColor: Colors.grey[200],
         appBar: AppBar(
           title: const Text('Easypol Cocktails'),
           actions: <Widget>[
@@ -80,7 +81,7 @@ class HomePage extends StatelessWidget {
             //Uso un builder per ricavare il context con già il DefaultTabController
             Builder(builder: (context) {
               return PopupMenuButton(
-                  icon: const Icon(Icons.filter_alt),
+                  icon: const Icon(Icons.filter_alt_outlined),
                   enabled: !model.loading,
                   onSelected: (result) {
                     model.filterByCategory('$result');
@@ -115,6 +116,7 @@ class HomePage extends StatelessWidget {
             }),
           ],
           bottom: const TabBar(
+            indicatorColor: Colors.amber,
             tabs: [
               Tab(icon: Text('COCKTAILS')),
               Tab(icon: Text('FAVORITES')),
@@ -138,7 +140,7 @@ class HomePage extends StatelessWidget {
                                 model.filterByCategory(kNoFilterString),
                             icon: const Icon(Icons.clear),
                           ),
-                          tileColor: Colors.grey[200],
+                          tileColor: Colors.blue[100],
                         ),
                       Expanded(child: DrinksListView(drinks: model.drinks)),
                     ],
@@ -155,7 +157,7 @@ class HomePage extends StatelessWidget {
   }
 }
 
-//Lista Cocktails
+///Lista Cocktails
 class DrinksListView extends StatelessWidget {
   const DrinksListView({Key? key, required this.drinks}) : super(key: key);
 
@@ -170,6 +172,7 @@ class DrinksListView extends StatelessWidget {
     final width = MediaQuery.of(context).size.width;
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
           child: ListView.separated(
@@ -179,14 +182,13 @@ class DrinksListView extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 56),
           ),
         ),
-        if (width > kTablet) const VerticalDivider(),
-        if (width > kTablet) const Expanded(child: DrinkDetail())
+        if (width > kTabletBreakpoint) const Expanded(child: DrinkDetail())
       ],
     );
   }
 }
 
-//Riga Cocktail
+///Riga Cocktail
 class DrinkTile extends StatelessWidget {
   final Drink drink;
 
@@ -200,49 +202,50 @@ class DrinkTile extends StatelessWidget {
 
     final width = MediaQuery.of(context).size.width;
 
-    return ListTile(
-      onTap: () {
-        model.selectedDrink = drink.id;
-
-        if (width >= kTablet) {
-          model.showDetails();
-        } else {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const DrinkDetail()),
-          );
-        }
-      },
-      isThreeLine: true,
-      leading: CircleAvatar(
-        backgroundImage: NetworkImage(drink.preview),
-      ),
-      title: Text(drink.name),
-      subtitle: Text(
-        drink.ingredients.map((e) => e.name).toList().join(', '),
-      ),
-      trailing: IconButton(
-        icon: favorite
-            ? const Icon(Icons.favorite, color: Colors.red)
-            : const Icon(Icons.favorite_border),
-        onPressed: () {
-          !model.favorites.contains(drink.id)
-              ? model.addFavorite(drink.id)
-              : model.removeFavorite(drink.id);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  favorite ? 'Removed from favorites.' : 'Added to favorites.'),
-              duration: const Duration(seconds: 1),
-            ),
-          );
+    return Card(
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundImage:
+              drink.thumb.isEmpty ? null : NetworkImage(drink.preview),
+        ),
+        title: Text(drink.name),
+        subtitle: Text(
+          drink.ingredients.map((e) => e.name).toList().join(', '),
+        ),
+        trailing: IconButton(
+          icon: favorite
+              ? const Icon(Icons.favorite, color: Colors.red)
+              : const Icon(Icons.favorite_border),
+          onPressed: () {
+            !model.favorites.contains(drink.id)
+                ? model.addFavorite(drink.id)
+                : model.removeFavorite(drink.id);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(favorite
+                    ? 'Removed from favorites.'
+                    : 'Added to favorites.'),
+                duration: const Duration(seconds: 1),
+              ),
+            );
+          },
+        ),
+        isThreeLine: true,
+        onTap: () {
+          if (width >= kTabletBreakpoint) {
+            model.showDetails(drink.id);
+          } else {
+            model.selectedDrinkId = drink.id;
+            Navigator.pushNamed(context, DrinkDetail.routeName);
+          }
         },
+        selected: model.selectedDrinkId == drink.id,
       ),
     );
   }
 }
 
-//Ricerca Cocktails
+///Ricerca Cocktails
 class DrinksSearchDelegate extends SearchDelegate {
   DrinksSearchDelegate(this.model);
 
@@ -251,7 +254,7 @@ class DrinksSearchDelegate extends SearchDelegate {
   @override
   String? get searchFieldLabel => "Search drink or ingredient";
 
-  //Reset filtro di ricerca
+  ///Reset filtro di ricerca
   @override
   List<Widget> buildActions(BuildContext context) {
     return [
@@ -259,7 +262,7 @@ class DrinksSearchDelegate extends SearchDelegate {
     ];
   }
 
-  //Chiusura pagina di ricerca
+  ///Chiusura pagina di ricerca
   @override
   Widget buildLeading(BuildContext context) {
     return IconButton(
@@ -268,6 +271,7 @@ class DrinksSearchDelegate extends SearchDelegate {
     );
   }
 
+  ///Ricerca definitiva
   @override
   Widget buildResults(BuildContext context) {
     final result = context.read<DrinksModel>().search(query);
@@ -275,6 +279,7 @@ class DrinksSearchDelegate extends SearchDelegate {
     return DrinksListView(drinks: result);
   }
 
+  ///Ricerca durante inserimento
   @override
   Widget buildSuggestions(BuildContext context) {
     final result = context.read<DrinksModel>().search(query);

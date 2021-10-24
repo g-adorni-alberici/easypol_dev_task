@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+///Schermata di errore
 class ErrorScreen extends StatelessWidget {
   const ErrorScreen({Key? key, required this.error, this.onRetry})
       : super(key: key);
@@ -19,7 +20,8 @@ class ErrorScreen extends StatelessWidget {
           const SizedBox(height: 32),
           Text(error, textAlign: TextAlign.center),
           const SizedBox(height: 32),
-          OutlinedButton(onPressed: onRetry, child: const Text('RETRY'))
+          if (onRetry != null)
+            OutlinedButton(onPressed: onRetry, child: const Text('RETRY'))
         ],
       ),
     );

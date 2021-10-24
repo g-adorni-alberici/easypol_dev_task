@@ -1,4 +1,5 @@
 import 'package:dev_task_adorni/screens/authentication.dart';
+import 'package:dev_task_adorni/screens/drink_detail.dart';
 import 'package:dev_task_adorni/screens/home.dart';
 import 'package:dev_task_adorni/screens/qr_scan.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +14,6 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<DrinksModel>(
@@ -21,14 +21,20 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Gabor Dev Task',
         theme: ThemeData(
-          primarySwatch: Colors.blue,
+          primaryColor: Colors.grey[900],
+          colorScheme: ColorScheme.light(
+            primary: Colors.grey[900]!,
+            secondary: Colors.amber,
+          ),
         ),
         initialRoute: AuthenticationPage.routeName,
         routes: {
           AuthenticationPage.routeName: (context) => const AuthenticationPage(),
-          NewPinForm.routeName: (context) => const NewPinForm(),
+          NewPinPage.routeName: (context) => const NewPinPage(),
           HomePage.routeName: (context) => const HomePage(),
+          DrinkDetail.routeName: (context) => const DrinkDetail(),
           QrScan.routeName: (context) => const QrScan(),
+          GenerateQrPage.routeName: (context) => const GenerateQrPage(),
         },
       ),
     );

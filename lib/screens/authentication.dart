@@ -1,10 +1,13 @@
-import 'package:dev_task_adorni/screens/home.dart';
+import 'package:dev_task_adorni/models/drinks_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'home.dart';
 
 class AuthenticationPage extends StatefulWidget {
   const AuthenticationPage({Key? key}) : super(key: key);
@@ -19,7 +22,7 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
   ///Gestore autenticazione biometrica
   final auth = LocalAuthentication();
 
-  ///PIN inserit
+  ///PIN inserito
   final _pinController = TextEditingController();
 
   ///Caricamento parametri
@@ -38,7 +41,7 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
     _checkPinAndBiometrics();
   }
 
-  ///Verifica che esista un PIN associato e l'impronta digitale
+  ///Verifica che esista un PIN associato e che il dispositivo supporti l'impronta digitale
   Future _checkPinAndBiometrics() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -57,25 +60,34 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
     setState(() {});
   }
 
-  //Autenticazione con impronta
+  ///Autenticazione con impronta
   Future _biometricAuthenticate() async {
-    bool didAuthenticate = await auth.authenticate(
-        localizedReason: 'Please authenticate to access the application');
+    try {
+      bool didAuthenticate = await auth.authenticate(
+          localizedReason: 'Please authenticate to access the application');
 
-    if (didAuthenticate) {
-      Navigator.pushReplacementNamed(context, HomePage.routeName);
+      if (didAuthenticate) {
+        context.read<DrinksModel>().getDrinks();
+        Navigator.pushReplacementNamed(context, HomePage.routeName);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                "Biometric Authentication not available. Required security features not enabled")),
+      );
     }
   }
 
-  //Autenticazione con PIN
+  ///Autenticazione con PIN
   Future _pinAuthenticate(String value) async {
     final prefs = await SharedPreferences.getInstance();
 
     final pin = prefs.getString('pin');
 
     if (pin == value) {
-      Navigator.pushNamedAndRemoveUntil(
-          context, HomePage.routeName, (route) => false);
+      context.read<DrinksModel>().getDrinks();
+      Navigator.pushReplacementNamed(context, HomePage.routeName);
     } else {
       _pinController.text = "";
       ScaffoldMessenger.of(context).showSnackBar(
@@ -94,56 +106,56 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
             Text("GABOR DEV TASK",
                 style: Theme.of(context).textTheme.headline4),
             Expanded(
-              child: Center(child: Builder(builder: (context) {
-                //Caricamento e controllo parametri
-                if (_loading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+              child: Center(
+                child: Builder(
+                  builder: (context) {
+                    //Caricamento e controllo parametri
+                    if (_loading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-                //Form al centro
-                return SizedBox(
-                  width: 300,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Builder(builder: (context) {
-                        //C'è già un pin impostato
-                        if (_hasPin) {
-                          return PinCodeTextField(
-                            appContext: context,
-                            autoFocus: true,
-                            length: 6,
-                            obscureText: true,
-                            keyboardType: TextInputType.number,
-                            enablePinAutofill: false,
-                            controller: _pinController,
-                            onCompleted: (value) => _pinAuthenticate(value),
-                            onChanged: (value) {},
-                          );
-                        }
+                    //Form al centro
+                    return SizedBox(
+                      width: 300,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Builder(builder: (context) {
+                            //C'è già un pin impostato
+                            if (_hasPin) {
+                              return PinCodeTextField(
+                                appContext: context,
+                                autoFocus: true,
+                                length: 6,
+                                obscureText: true,
+                                keyboardType: TextInputType.number,
+                                enablePinAutofill: false,
+                                controller: _pinController,
+                                onCompleted: (value) => _pinAuthenticate(value),
+                                onChanged: (value) {},
+                              );
+                            }
 
-                        //Bottone per impostare un PIN
-                        return OutlinedButton(
-                            onPressed: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const NewPinForm(),
-                                  ),
-                                ),
-                            child: const Text('SET NEW PIN'));
-                      }),
-                      const SizedBox(height: 64),
-                      if (_hasFingerprint)
-                        IconButton(
-                          iconSize: 56,
-                          icon: const Icon(Icons.fingerprint),
-                          onPressed: () => _biometricAuthenticate(),
-                        )
-                    ],
-                  ),
-                );
-              })),
+                            //Bottone per impostare un nuovo PIN
+                            return OutlinedButton(
+                                onPressed: () => Navigator.pushNamed(
+                                    context, NewPinPage.routeName),
+                                child: const Text('SET NEW PIN'));
+                          }),
+                          const SizedBox(height: 64),
+                          if (_hasFingerprint)
+                            IconButton(
+                              iconSize: 56,
+                              icon: const Icon(Icons.fingerprint),
+                              onPressed: () => _biometricAuthenticate(),
+                            )
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
           ],
         ),
@@ -153,21 +165,24 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
 }
 
 ///Schermata per impostare un nuovo PIN
-///Per simulare il salvataggio del codice utilizzo shared_preferences
-class NewPinForm extends StatefulWidget {
-  const NewPinForm({Key? key}) : super(key: key);
+///Per simulare l'impostazione del codice utilizzo shared_preferences
+class NewPinPage extends StatefulWidget {
+  const NewPinPage({Key? key}) : super(key: key);
 
   static const routeName = '/pin';
 
   @override
-  State<StatefulWidget> createState() => _NewPinFormState();
+  State<StatefulWidget> createState() => _NewPinPageState();
 }
 
-class _NewPinFormState extends State<NewPinForm> {
-  ///Primo PIN inserito
+class _NewPinPageState extends State<NewPinPage> {
+  ///Se != null vuol dire che sono nella seconda schermata di controllo
   String? _pin1;
 
   final _pinController = TextEditingController();
+  final _focusNode = FocusNode();
+
+  //Il dispose viene già gestito da pin_code_fields
 
   ///Controllo PIN
   void _checkPin(BuildContext context, String newPin) async {
@@ -175,34 +190,35 @@ class _NewPinFormState extends State<NewPinForm> {
       //Prima schermata
 
       //Chiedo PIN di controllo
-      _pin1 = newPin;
+      setState(() {
+        _pin1 = newPin;
+      });
 
-      setState(() {});
+      //Cancello in ogni caso il PIN
+      _pinController.clear();
     } else {
       //Seconda schermata
 
       //I 2 PIN inseriti corrispondono, salvo il PIN
       if (_pin1 == newPin) {
         final prefs = await SharedPreferences.getInstance();
-
         await prefs.setString('pin', newPin);
 
         //Uso pushReplacement in modo da ricaricare la schermata iniziale
-        Navigator.pushReplacementNamed(context, '/');
+        Navigator.pushReplacementNamed(context, AuthenticationPage.routeName);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text("PIN different from the one previously inserted")),
+          const SnackBar(content: Text("PIN doesn't match")),
         );
       }
     }
-
-    //Cancello in ogni caso il PIN
-    _pinController.clear();
   }
 
   @override
   Widget build(BuildContext context) {
+    //In questo modo apre direttamente la tastiera
+    _focusNode.requestFocus();
+
     return Scaffold(
         appBar: AppBar(),
         body: Center(
@@ -220,15 +236,13 @@ class _NewPinFormState extends State<NewPinForm> {
                 const SizedBox(height: 32),
                 PinCodeTextField(
                   appContext: context,
-                  autoFocus: true,
+                  controller: _pinController,
+                  focusNode: _focusNode,
                   length: 6,
                   obscureText: true,
                   keyboardType: TextInputType.number,
                   enablePinAutofill: false,
-                  controller: _pinController,
-                  onCompleted: (value) async {
-                    _checkPin(context, value);
-                  },
+                  onCompleted: (value) async => _checkPin(context, value),
                   onChanged: (value) {},
                 ),
               ],

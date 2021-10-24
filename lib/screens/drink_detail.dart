@@ -2,8 +2,6 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui';
 
-import 'package:dev_task_adorni/models/drinks_model.dart';
-import 'package:dev_task_adorni/screens/home.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
@@ -12,93 +10,138 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../models/drink.dart';
+import '../models/drinks_model.dart';
 import '../services/rest_api.dart';
+import '../widgets/error_screen.dart';
+import 'home.dart';
 import 'qr_scan.dart';
 
+///Dettaglio cocktail
 class DrinkDetail extends StatelessWidget {
   const DrinkDetail({Key? key}) : super(key: key);
 
+  static String routeName = '/drink_detail';
+
+  //Schermata di generazione QR + condivisione
+  void _generateQr(BuildContext context, Drink drink) {
+    Navigator.pushNamed(context, GenerateQrPage.routeName, arguments: drink);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final id = context.watch<DrinksModel>().selectedDrink!;
+    //Selezione da modello in modo da gestire smartphone / tablet
+    final id = context.watch<DrinksModel>().selectedDrinkId;
 
+    //Tema per intestazioni
     final headerStyle = Theme.of(context)
         .textTheme
         .subtitle1!
         .copyWith(fontWeight: FontWeight.bold);
 
+    //Nessun cocktail selezionato
+    if (id == null) {
+      return const SizedBox.shrink();
+    }
+
     return FutureBuilder<Drink>(
         future: RestApi.lookupCocktailDetail(id),
         builder: (context, snapshot) {
+          final width = MediaQuery.of(context).size.width;
+
+          //Eccezione, mostro una schermata di errore
+          if (snapshot.hasError) {
+            const errorScreen = ErrorScreen(
+              error: 'Server error. Please check your network connection.',
+            );
+            if (width < kTabletBreakpoint) {
+              return Scaffold(appBar: AppBar(), body: errorScreen);
+            } else {
+              return const Card(child: errorScreen);
+            }
+          }
+
           if (snapshot.hasData) {
             final d = snapshot.data!;
 
-            final width = MediaQuery.of(context).size.width;
-
-            final body = Column(children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      ListTile(
-                        title: Text(d.name,
-                            style: Theme.of(context).textTheme.headline6),
-                      ),
-                      Image.network(
-                        d.thumb,
-                        height: 300,
-                      ),
-                      Container(
-                        padding:
-                            const EdgeInsets.only(left: 16, top: 16, right: 16),
-                        child: Text('Instructions:', style: headerStyle),
-                      ),
-                      ListTile(title: Text(d.instructions!)),
-                      Container(
-                        padding:
-                            const EdgeInsets.only(left: 16, top: 16, right: 16),
-                        child: Text('Ingredients:', style: headerStyle),
-                      ),
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemBuilder: (context, index) => ListTile(
-                          title: Row(
-                            children: [
-                              Text(d.ingredients[index].name),
-                              const Spacer(),
-                              Text(
-                                d.ingredients[index].measure ?? '',
-                                style: const TextStyle(color: Colors.black54),
-                              )
-                            ],
-                          ),
-                        ),
-                        separatorBuilder: (context, index) =>
-                            const Divider(height: 0),
-                        itemCount: d.ingredients.length,
-                      ),
-                      const SizedBox(height: 56),
-                    ],
+            //Widget principale
+            final body = SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  ListTile(
+                    title: Text(d.name,
+                        style: Theme.of(context).textTheme.headline6),
+                    trailing: width < kTabletBreakpoint
+                        ? null
+                        : IconButton(
+                            onPressed: () => _generateQr(context, d),
+                            icon: const Icon(Icons.share_outlined)),
                   ),
-                ),
-              )
-            ]);
+                  Image.network(
+                    d.thumb,
+                    height: 400,
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Wrap(
+                      spacing: 4,
+                      runSpacing: 2,
+                      children: [
+                        Chip(label: Text(d.category)),
+                        if (d.iba != null) Chip(label: Text('IBA: ${d.iba!}')),
+                        if (d.glass != null) Chip(label: Text(d.glass!)),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.only(left: 16, top: 16, right: 16),
+                    child: Text('Instructions:', style: headerStyle),
+                  ),
+                  ListTile(title: Text(d.instructions!)),
+                  Container(
+                    padding:
+                        const EdgeInsets.only(left: 16, top: 16, right: 16),
+                    child: Text('Ingredients:', style: headerStyle),
+                  ),
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemBuilder: (context, index) => ListTile(
+                      title: Row(
+                        children: [
+                          Text(d.ingredients[index].name),
+                          const Spacer(),
+                          Text(
+                            d.ingredients[index].measure ?? '',
+                            style: const TextStyle(color: Colors.black54),
+                          )
+                        ],
+                      ),
+                    ),
+                    separatorBuilder: (context, index) =>
+                        const Divider(height: 0),
+                    itemCount: d.ingredients.length,
+                  ),
+                  const SizedBox(height: 56),
+                ],
+              ),
+            );
 
-            if (width < kTablet) {
+            if (width < kTabletBreakpoint) {
+              //Su smartphone è una nuova pagina
               return Scaffold(
                 appBar: AppBar(),
                 body: body,
                 floatingActionButton: FloatingActionButton(
-                  onPressed: () async => Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => QrShare(d))),
-                  child: const Icon(Icons.share),
+                  onPressed: () => _generateQr(context, d),
+                  child: const Icon(Icons.share_outlined),
                 ),
               );
             } else {
-              return body;
+              //Su tablet è un widget a destra della schermata principale
+              return Card(child: body);
             }
           }
 
@@ -108,29 +151,29 @@ class DrinkDetail extends StatelessWidget {
 }
 
 //Generazione QR Code co possibilità di condivisione
-class QrShare extends StatelessWidget {
-  const QrShare(this.drink, {Key? key}) : super(key: key);
+class GenerateQrPage extends StatelessWidget {
+  const GenerateQrPage({Key? key}) : super(key: key);
 
-  final Drink drink;
-
-  String get code => "$kCheckQrCode${drink.id}";
+  static String routeName = '/generate_qr';
 
   //Genera un file temporaneo con il qr code e lo condivide
-  void _share() async {
+  void _share(Drink drink) async {
+    //Creazione immagine QR
     final painter = QrPainter(
-        data: code,
+        data: "$kCheckQrCode${drink.id}",
         version: QrVersions.auto,
         gapless: true,
         emptyColor: Colors.white);
 
-    final tempDir = await getTemporaryDirectory();
-
     final data = await painter.toImageData(512, format: ImageByteFormat.png);
     Uint8List pngBytes = data!.buffer.asUint8List();
 
+    //Scrittura file temporaneo
+    final tempDir = await getTemporaryDirectory();
     final file = await File('${tempDir.path}/qr.png').create();
     await file.writeAsBytes(pngBytes);
 
+    //Condivisione file appena creato
     Share.shareFiles(
       ['${tempDir.path}/qr.png'],
       text: 'Easypol Cocktail - ${drink.name}',
@@ -139,6 +182,8 @@ class QrShare extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final drink = ModalRoute.of(context)!.settings.arguments as Drink;
+
     return Scaffold(
       appBar: AppBar(),
       body: Center(
@@ -148,10 +193,10 @@ class QrShare extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
-              QrImage(data: code),
+              QrImage(data: "$kCheckQrCode${drink.id}"),
               const SizedBox(height: 64),
               OutlinedButton.icon(
-                  onPressed: () => _share(),
+                  onPressed: () => _share(drink),
                   icon: const Icon(Icons.share),
                   label: const Text('SHARE'))
             ],

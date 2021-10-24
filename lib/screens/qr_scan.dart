@@ -1,11 +1,12 @@
 import 'dart:io';
 
-import 'package:dev_task_adorni/models/drinks_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
+import '../models/drinks_model.dart';
 import 'drink_detail.dart';
+import 'home.dart';
 
 const kCheckQrCode = 'EASYPOL_COCKTAIL:';
 
@@ -23,8 +24,7 @@ class _QrScanState extends State<QrScan> {
   QRViewController? controller;
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
 
-  // In order to get hot reload to work we need to pause the camera if the platform
-  // is android, or resume the camera if the platform is iOS.
+  /// Serve solo per l'hot reload come da istruzioni pacchetto
   @override
   void reassemble() {
     super.reassemble();
@@ -40,7 +40,7 @@ class _QrScanState extends State<QrScan> {
     super.dispose();
   }
 
-  //Scanner creato, imposto l'evento di lettura
+  ///Scanner creato, imposto l'evento di lettura
   void _onQRViewCreated(QRViewController controller) {
     try {
       this.controller = controller;
@@ -53,11 +53,15 @@ class _QrScanState extends State<QrScan> {
         if (scanData.code.contains(kCheckQrCode)) {
           final id = int.tryParse(scanData.code.replaceAll(kCheckQrCode, ''));
 
-          context.read<DrinksModel>().selectedDrink = id;
-
           if (id != null) {
-            Navigator.pushReplacement(context,
-                MaterialPageRoute(builder: (_) => const DrinkDetail()));
+            if (MediaQuery.of(context).size.width < kTabletBreakpoint) {
+              context.read<DrinksModel>().selectedDrinkId = id;
+              Navigator.pushReplacementNamed(context, DrinkDetail.routeName);
+            } else {
+              //Su tablet aggiorno la pagina
+              Navigator.pop(context);
+              context.read<DrinksModel>().showDetails(id);
+            }
 
             return;
           }
@@ -80,12 +84,12 @@ class _QrScanState extends State<QrScan> {
       Navigator.pop(context);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('An error occured. Try again')),
+        const SnackBar(content: Text('An error occurred. Try again')),
       );
     }
   }
 
-  //Verifica permessi fotocamera
+  ///Verifica permessi fotocamera
   void _onPermissionSet(
       BuildContext context, QRViewController controller, bool permission) {
     if (!permission) {

@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/drink.dart';
 
-//Versione free limitata a 25 per la ricerca e 100 per gli elenchi
+///Versione free limitata a 25 per la ricerca e 100 per gli elenchi
 class RestApi {
   static const domain = 'www.thecocktaildb.com';
 
