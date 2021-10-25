@@ -228,7 +228,8 @@ class _NewPinPageState extends State<NewPinPage> {
   @override
   Widget build(BuildContext context) {
     //In questo modo apre direttamente la tastiera
-    _focusNode.requestFocus();
+    WidgetsBinding.instance!
+        .addPostFrameCallback((_) => _focusNode.requestFocus());
 
     return Scaffold(
         appBar: AppBar(),
