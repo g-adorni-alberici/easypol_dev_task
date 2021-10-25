@@ -45,6 +45,8 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
   Future _checkPinAndBiometrics() async {
     final prefs = await SharedPreferences.getInstance();
 
+    prefs.clear();
+
     _hasPin = prefs.containsKey('pin');
 
     if (!kIsWeb && await auth.canCheckBiometrics) {
@@ -68,7 +70,8 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
 
       if (didAuthenticate) {
         context.read<DrinksModel>().getDrinks();
-        Navigator.pushReplacementNamed(context, HomePage.routeName);
+        Navigator.pushNamedAndRemoveUntil(
+            context, HomePage.routeName, (route) => false);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -87,7 +90,8 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
 
     if (pin == value) {
       context.read<DrinksModel>().getDrinks();
-      Navigator.pushReplacementNamed(context, HomePage.routeName);
+      Navigator.pushNamedAndRemoveUntil(
+          context, HomePage.routeName, (route) => false);
     } else {
       _pinController.text = "";
       ScaffoldMessenger.of(context).showSnackBar(
@@ -98,66 +102,74 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 64),
-            Text("GABOR DEV TASK",
-                style: Theme.of(context).textTheme.headline4),
-            Expanded(
-              child: Center(
-                child: Builder(
-                  builder: (context) {
-                    //Caricamento e controllo parametri
-                    if (_loading) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
+    return Theme(
+      data: ThemeData(
+        appBarTheme: const AppBarTheme(
+          systemOverlayStyle: SystemUiOverlayStyle.dark, // 2
+        ),
+      ),
+      child: Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 64),
+              Text("GABOR DEV TASK",
+                  style: Theme.of(context).textTheme.headline4),
+              Expanded(
+                child: Center(
+                  child: Builder(
+                    builder: (context) {
+                      //Caricamento e controllo parametri
+                      if (_loading) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-                    //Form al centro
-                    return SizedBox(
-                      width: 300,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Builder(builder: (context) {
-                            //C'è già un pin impostato
-                            if (_hasPin) {
-                              return PinCodeTextField(
-                                appContext: context,
-                                autoFocus: true,
-                                length: 6,
-                                obscureText: true,
-                                keyboardType: TextInputType.number,
-                                enablePinAutofill: false,
-                                controller: _pinController,
-                                onCompleted: (value) => _pinAuthenticate(value),
-                                onChanged: (value) {},
-                              );
-                            }
+                      //Form al centro
+                      return SizedBox(
+                        width: 300,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Builder(builder: (context) {
+                              //C'è già un pin impostato
+                              if (_hasPin) {
+                                return PinCodeTextField(
+                                  appContext: context,
+                                  autoFocus: true,
+                                  length: 6,
+                                  obscureText: true,
+                                  keyboardType: TextInputType.number,
+                                  enablePinAutofill: false,
+                                  controller: _pinController,
+                                  onCompleted: (value) =>
+                                      _pinAuthenticate(value),
+                                  onChanged: (value) {},
+                                );
+                              }
 
-                            //Bottone per impostare un nuovo PIN
-                            return OutlinedButton(
-                                onPressed: () => Navigator.pushNamed(
-                                    context, NewPinPage.routeName),
-                                child: const Text('SET NEW PIN'));
-                          }),
-                          const SizedBox(height: 64),
-                          if (_hasFingerprint)
-                            IconButton(
-                              iconSize: 56,
-                              icon: const Icon(Icons.fingerprint),
-                              onPressed: () => _biometricAuthenticate(),
-                            )
-                        ],
-                      ),
-                    );
-                  },
+                              //Bottone per impostare un nuovo PIN
+                              return OutlinedButton(
+                                  onPressed: () => Navigator.pushNamed(
+                                      context, NewPinPage.routeName),
+                                  child: const Text('SET NEW PIN'));
+                            }),
+                            const SizedBox(height: 64),
+                            if (_hasFingerprint)
+                              IconButton(
+                                iconSize: 56,
+                                icon: const Icon(Icons.fingerprint),
+                                onPressed: () => _biometricAuthenticate(),
+                              )
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -204,8 +216,9 @@ class _NewPinPageState extends State<NewPinPage> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('pin', newPin);
 
-        //Uso pushReplacement in modo da ricaricare la schermata iniziale
-        Navigator.pushReplacementNamed(context, AuthenticationPage.routeName);
+        //Ritorno alla schermata iniziale
+        Navigator.pushNamedAndRemoveUntil(
+            context, AuthenticationPage.routeName, (route) => false);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("PIN doesn't match")),

@@ -54,3 +54,33 @@ Valuteremo i seguenti aspetti:
 - Rilascio su Apple TestFlight e/o Test interno Google Play Store
 - Presentazione dell’assignment tramite Google Meet
 
+# Soluzione Gabor Adorni
+
+## Premesse:
+
+Ho analizzato le API a disposizione su https://www.thecocktaildb.com/api.php:
+- Le API di ricerca hanno un limite di 25
+- La lista di ingredienti ha un limite di 100
+- La ricerca dei cocktails per ingrediente può essere effettuata solo con la stringa intera (es. 'sug' -> risultati: 0, 'Sugar' risultati: >= 1)
+
+## Soluzione
+- Dati i limiti sopracitati ho optato per una gestione della ricerca e dei filtri completamente client-side.
+- Al primo accesso verrà chiesto di impostare un codice PIN a 6 cifre (Per la simulazione lo salvo con il pacchetto shared_preferences)
+- Il PIN impostato dovrà essere immesso ad ogni sessione successiva per accedere all'app.
+- Se il dispositivo lo prevede è possibile accedere anche con l'impronta digitale.
+- I dati verranno caricati una sola volta non appena si è autorizzati all'accesso dell'app.
+- Dato il limite di 25 che non riusciva a rappresentare una situazione reale ho implementato il seguente work-around:
+    - Utilizzo l'API per caricare i cocktails dato come parametro la lettera iniziale.
+    - Grazie alla funzione Future.wait richiamo la GET per ogni lettera dell'alfabeto, in questo modo verranno gestite in asincrono e contemporaneamente.
+    - Riconosco che in una situazione reale non è la soluzione ottimale, ma in questo modo posso lavorare su più di 500 elementi.
+- L'app è composta principalmente da 2 schermate: 1 per la lista dei cocktails e l'altra per il dettaglio. Su tablet entrambe saranno sulla stessa schermata.
+- La schermata principale a sua volta sarà divisa su 2 tab: 1 per lista completa dei cocktails e l'altra per i preferiti.
+- Sulla toolbar saranno presenti 2 funzioni:
+    - Ricerca per nome cocktail o per nome ingrediente
+    - Filtro con selezione tra alcolico / non alcolico e le categorie caricate con la relativa API.
+- Dalla schermata principale sarà possibile accedere alla fotocamera per la scansione dei codici QR.
+- Verranno riconosciuti solo i QR che contengono un codice apposito e l'id del cocktail. In caso di codice corretto verrà riportata la relativa schermata di dettaglio.
+- Nella schermata di dettaglio saranno visualizzabili dati come la ricetta, il bicchiere, ecc. Inoltre verrà mostrata la lista degli ingredienti con la relativa quantità.
+- Nel dettaglio sarà possibile generare un codice QR che potrà essere condiviso con gli strumenti disponibili sul dispositivo.
+
+

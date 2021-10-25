@@ -20,7 +20,7 @@ class HomePage extends StatelessWidget {
   Future _scanQr(BuildContext context) async {
     var status = await Permission.camera.status;
 
-    //Apr le impostazioni
+    //Permessi negati dalle impostazioni
     if (status.isPermanentlyDenied) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Camera permissions permanently denied")),
@@ -170,10 +170,9 @@ class DrinksListView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
-          child: ListView.separated(
+          child: ListView.builder(
             itemCount: drinks.length,
             itemBuilder: (context, index) => DrinkTile(drink: drinks[index]),
-            separatorBuilder: (context, index) => const Divider(height: 0),
             padding: const EdgeInsets.only(bottom: 56),
           ),
         ),
