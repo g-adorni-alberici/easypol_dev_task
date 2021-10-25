@@ -190,7 +190,7 @@ class _NewPinPageState extends State<NewPinPage> {
   String? _pin1;
 
   final _pinController = TextEditingController();
-  final _focusNode = FocusNode();
+  // final _focusNode = FocusNode();
 
   //Il dispose viene già gestito da pin_code_fields
 
@@ -199,13 +199,13 @@ class _NewPinPageState extends State<NewPinPage> {
     if (_pin1 == null) {
       //Prima schermata
 
+      //Cancello in ogni caso il PIN
+      _pinController.clear();
+
       //Chiedo PIN di controllo
       setState(() {
         _pin1 = newPin;
       });
-
-      //Cancello in ogni caso il PIN
-      _pinController.clear();
     } else {
       //Seconda schermata
 
@@ -228,8 +228,8 @@ class _NewPinPageState extends State<NewPinPage> {
   @override
   Widget build(BuildContext context) {
     //In questo modo apre direttamente la tastiera
-    WidgetsBinding.instance!
-        .addPostFrameCallback((_) => _focusNode.requestFocus());
+    // WidgetsBinding.instance!
+    //     .addPostFrameCallback((_) => _focusNode.requestFocus());
 
     return Scaffold(
         appBar: AppBar(),
@@ -249,7 +249,8 @@ class _NewPinPageState extends State<NewPinPage> {
                 PinCodeTextField(
                   appContext: context,
                   controller: _pinController,
-                  focusNode: _focusNode,
+                  autoFocus: true,
+                  //focusNode: _focusNode,
                   length: 6,
                   obscureText: true,
                   keyboardType: TextInputType.number,
