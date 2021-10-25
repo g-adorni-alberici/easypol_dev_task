@@ -1,16 +1,6 @@
 import 'package:dev_task_adorni/models/drinks_model.dart';
-import 'package:dev_task_adorni/screens/home.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-Widget createHomeScreen() => ChangeNotifierProvider<DrinksModel>(
-      create: (context) => DrinksModel(),
-      child: const MaterialApp(
-        home: HomePage(),
-      ),
-    );
 
 void main() {
   group('Drinks Model Test', () {
@@ -41,7 +31,7 @@ void main() {
       expect(model.error, "test exception");
     });
 
-    testWidgets('Aggiungi/Rimuove elementi ai preferiti', (tester) async {
+    testWidgets('Test aggiungi/rimuovi preferiti', (tester) async {
       SharedPreferences.setMockInitialValues({});
 
       await model.getMockDrinks(false);

@@ -27,7 +27,7 @@ void main() {
       expect(find.byType(ListView), findsOneWidget);
     });
 
-    testWidgets('Test Scroll', (tester) async {
+    testWidgets('Test scroll', (tester) async {
       final widget = await createHomeScreen();
       await tester.pumpWidget(widget);
 
@@ -42,7 +42,7 @@ void main() {
       expect(find.text('DRINK 0'), findsNothing);
     });
 
-    testWidgets('Testing IconButtons', (tester) async {
+    testWidgets('Test bottoni preferiti', (tester) async {
       final widget = await createHomeScreen();
       await tester.pumpWidget(widget);
 

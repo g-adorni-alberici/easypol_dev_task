@@ -195,7 +195,7 @@ class DrinksModel extends ChangeNotifier {
   ///Rimuove l'id del cocktail dai preferiti
   Future removeFavorite(int drinkId) async {
     _favorites.remove(drinkId);
-    _writeFavorites();
+    await _writeFavorites();
     notifyListeners();
   }
 
