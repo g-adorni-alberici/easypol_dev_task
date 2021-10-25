@@ -45,8 +45,6 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
   Future _checkPinAndBiometrics() async {
     final prefs = await SharedPreferences.getInstance();
 
-    prefs.clear();
-
     _hasPin = prefs.containsKey('pin');
 
     if (!kIsWeb && await auth.canCheckBiometrics) {
