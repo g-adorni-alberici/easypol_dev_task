@@ -57,11 +57,6 @@ class HomePage extends StatelessWidget {
       ));
     }
 
-    //Caricamento
-    if (model.loading) {
-      model.getDrinks();
-    }
-
     return DefaultTabController(
       length: 2,
       child: Scaffold(
